@@ -23,6 +23,18 @@ The current catalog contains no public installer artifact. The desktop checklist
 
 The simplest interim administrative process is a reviewed configuration change and controlled deployment. There is no admin dashboard or public release-management endpoint.
 
+### Approving a release
+
+1. Build, sign and notarize the artifact; record its SHA-256 (`shasum -a 256 <file>`).
+2. Host it at an HTTPS URL you control.
+3. In a pull request, edit the entry in `site-config.js`: set `availability: "Available"`, `version`, `operatingSystems`, `requirements`, `releaseNotes`, `downloadUrl`, `checksum`, and optionally `releaseDate` (`YYYY-MM-DD`) and `fileSize` (bytes).
+4. `release-catalog.js` validates every entry (HTTPS only, no embedded credentials, 64-hex checksum, complete fields). Invalid entries are never shown as downloads, and `npm test` checks the shipped catalog.
+5. Run `npm test`, review, merge and deploy.
+
+## Deployment
+
+The site is static: upload the repository files (excluding `server.js`, `test/` and `node_modules/`) to any static host such as GitHub Pages, Netlify or Cloudflare Pages. `server.js` is for local preview only, so configure its security headers at the host: a Content-Security-Policy restricting scripts, styles and images to `'self'`, plus `X-Content-Type-Options: nosniff`, `Referrer-Policy` and `X-Frame-Options: DENY`. Before launch, set the production domain (canonical URLs and sitemap), a monitored support email, and complete legal review. See [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md) for open items.
+
 ## Contact and signup
 
 There are no registration or feedback forms. No support email or ticketing system is configured, so the site does not imply that messages can be delivered or stored.

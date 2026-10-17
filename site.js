@@ -95,6 +95,7 @@
 
   const editionGrid = document.querySelector("[data-edition-grid]");
   if (editionGrid) {
+    const catalog = window.AnubisReleaseCatalog;
     const cards = config.releases.map((release) => {
       const card = document.createElement("article");
       card.className = "edition-card";
@@ -129,7 +130,7 @@
         version.textContent = `Version ${release.version}`;
         card.append(version);
       }
-      if (release.operatingSystems.length) {
+      if (release.operatingSystems && release.operatingSystems.length) {
         const systems = document.createElement("p");
         systems.className = "edition-note";
         systems.textContent = `Supported: ${release.operatingSystems.join(", ")}`;
@@ -158,27 +159,38 @@
         card.append(checksum);
       }
 
-      let downloadUrl;
-      if (release.downloadUrl) {
-        try {
-          const candidate = new URL(release.downloadUrl, window.location.href);
-          if (candidate.protocol === "https:" || candidate.origin === window.location.origin) {
-            downloadUrl = candidate.href;
-          }
-        } catch (error) {
-          console.error(`Invalid release URL for ${release.id}:`, error);
-        }
+      if (release.releaseDate) {
+        const date = document.createElement("p");
+        date.className = "edition-note";
+        date.textContent = `Released ${release.releaseDate}`;
+        card.append(date);
       }
-      if (release.availability === "Available" && release.version && release.operatingSystems.length && downloadUrl) {
+      if (release.fileSize) {
+        const size = document.createElement("p");
+        size.className = "edition-note";
+        size.textContent = `File size: ${(release.fileSize / 1048576).toFixed(1)} MB`;
+        card.append(size);
+      }
+
+      const check = catalog ? catalog.validateRelease(release, window.location.href) : { valid: false, downloadable: false };
+      if (!check.valid) console.error(`Invalid release entry ${release.id}:`, check.errors);
+      if (check.downloadable) {
         const link = document.createElement("a");
         link.className = "text-link";
-        link.href = downloadUrl;
+        link.href = check.downloadUrl;
+        link.rel = "noopener noreferrer";
         link.textContent = `Download ${release.name} ↗`;
         card.append(link);
+        if (release.checksum) {
+          const verify = document.createElement("p");
+          verify.className = "edition-note";
+          verify.textContent = "After downloading, compare the file's SHA-256 digest (macOS/Linux: shasum -a 256 <file>) with the value above before opening it.";
+          card.append(verify);
+        }
       } else {
         const note = document.createElement("span");
         note.className = "edition-note";
-        note.textContent = release.availability === "Planned" ? "Not available yet" : "Downloads coming soon";
+        note.textContent = !check.valid && release.availability === "Available" ? "Temporarily unavailable" : release.availability === "Planned" ? "Not available yet" : "Downloads coming soon";
         card.append(note);
       }
       return card;
